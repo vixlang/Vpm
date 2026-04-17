@@ -37,11 +37,15 @@ class Config:
 
 
 class VIndexTool:
-    def __init__(self, path: Path):
-        self.path = path
+    def __init__(self, dir_path: Path):
+        self.path = dir_path / "vindex.toml"
 
-    def content(self) -> dict[str, object]:
+    def content(self, package_name=None) -> dict[str, object]:
         import tomllib
+
+        if not (self.path).exists():
+            log.critical(f"包 {package_name} 不存在 vindex.toml 文件!")
+            return
 
         with open(self.path, "rb") as f:
             return tomllib.load(f)

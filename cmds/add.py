@@ -3,7 +3,7 @@ import argparse
 from git import Repo
 import re
 from pathlib import Path
-from ._utils import Config,log
+from ._utils import Config, log, VIndexTool
 import shutil
 
 
@@ -42,18 +42,18 @@ class AddCmd(Command):
 
         package_name = package_name.replace(".", "/")
 
-        PACK_PATH=Config.VIX_HOME / package_name
+        PACK_PATH = Config.VIX_HOME / package_name
 
         if PACK_PATH.exists():
             log.warning(f"包 {package_name} 已经存在!")
-            yn=input("是否覆盖? (y/n): ")
+            yn = input("是否覆盖? (y/n): ")
             if yn.lower() != "y":
                 log.warning("已取消操作")
                 return
             else:
                 shutil.rmtree(PACK_PATH)
                 log.success(f"删除包 {package_name} 成功")
-        
+
         log.info(f"开始下载包 {package_name} ...")
 
         Repo.clone_from(
@@ -64,13 +64,15 @@ class AddCmd(Command):
 
         log.info(f"下载包 {package_name} 成功，正在检查包信息 ...")
 
-        if not (PACK_PATH / "vindex.toml").exists():
-            log.critical(f"包 {package_name} 不存在 vindex.toml 文件!")
-            return
-        
+        # if not (PACK_PATH / "vindex.toml").exists():
+        #     log.critical(f"包 {package_name} 不存在 vindex.toml 文件!")
+        #     return
+
+        index = VIndexTool(PACK_PATH)
+        content=index.content(package_name=package_name)
+
         log.success(f"增加包 {package_name} 成功")
-
-
+        log.debug(content)
 
     def set_parser(self, p: argparse.ArgumentParser) -> argparse.ArgumentParser:
         subparsers = p.add_subparsers(dest="subcommand", help="Available commands")
