@@ -3,6 +3,7 @@ from datetime import datetime
 from colorama import init, Fore, Style
 from pathlib import Path
 import os
+import shutil
 
 init(autoreset=True)
 
@@ -33,7 +34,8 @@ class Logger:
 
 
 class Config:
-    VIX_HOME = Path(os.getenv("VIX_HOME", ".vix"))
+    VIX_HOME = Path(os.getenv("VIX_HOME", "./.vix"))
+    VIX_LIBS_PATH = VIX_HOME / "libs"
 
 
 class VIndexTool:
@@ -44,8 +46,16 @@ class VIndexTool:
         import tomllib
 
         if not (self.path).exists():
-            log.critical(f"包 {package_name} 不存在 vindex.toml 文件!")
-            return
+            log.error(f"包 {package_name} 不存在 vindex.toml 文件!")
+            yn = input("是否删除? (y/n)")
+            if yn == "y":
+                shutil.rmtree(self.path.parent)
+                log.warning(f"已删除包 {package_name}")
+                exit(0)
+            else:
+                log.critical(
+                    "已保留此包，但它不可用（缺少vindex.toml文件，vpm无法识别它）"
+                )
 
         with open(self.path, "rb") as f:
             return tomllib.load(f)
