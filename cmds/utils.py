@@ -64,9 +64,11 @@ class VIndexTool:
 
 @dataclass
 class PackageNameInfo:
-    git_master: str  # git主仓库名，如：github.com
-    user_name: str  # 用户名
     repo_name: str  # 仓库名
+
+    git_master: str = "github.com"  # git主仓库名，如：github.com
+    user_name: str = "vixlang"  # 用户名
+
     branch_name: str | None = None  # 分支名
 
     @property
@@ -85,18 +87,25 @@ class PackageNameInfo:
 
 def parse_pack_name(package_name: str) -> PackageNameInfo:
 
+    if not "." in package_name:
+        # vnet
+        package_name = f"github.com:vixlang.vlib-{package_name}"
+
     # 给自己留的小语法糖~
     if package_name.startswith("@"):
         package_name = "gitee.com:" + package_name[1:]
 
     if ":" in package_name:
+        # github.com:fexcode.vnet
         master, package_name = package_name.split(":")
         if not "." in master:
+            # github:fexcode.vnet
             master = master + ".com"
     else:
         master = "github.com"
 
     if "@" in package_name:
+        # fexcode.vnet@master
         package_name, branch = package_name.split("@")
     else:
         branch = None  # git的默认分支
