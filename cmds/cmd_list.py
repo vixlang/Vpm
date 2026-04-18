@@ -25,8 +25,7 @@ class ListCmd(Command):
         libs_path = Config.VIX_LIBS_PATH
 
         if not libs_path.exists():
-            log.warning("包目录不存在!")
-            return
+            log.critical("包目录不存在!")
 
         if tree_mode:
             self._print_tree(libs_path)
@@ -49,9 +48,14 @@ class ListCmd(Command):
                     if not repo_dir.is_dir():
                         continue
 
-                    # 构建包名
+                    # 检查是否存在vindex.toml
+                    vindex_file = repo_dir / "vindex.toml"
                     package_name = f"{master_dir.name}:{user_dir.name}.{repo_dir.name}"
-                    log.info(f"  {package_name}")
+
+                    if not vindex_file.exists():
+                        log.warning(f"  {package_name} (不可用)")
+                    else:
+                        log.info(f"  {package_name}")
 
     def _print_tree(self, libs_path: Path):
         log.info(f"{libs_path}")
@@ -81,7 +85,13 @@ class ListCmd(Command):
                         repo_prefix = "│       └── " if is_last_repo else "│       ├── "
                     else:
                         repo_prefix = "│   │   └── " if is_last_repo else "│   │   ├── "
-                    log.info(f"{repo_prefix}{repo_dir.name}")
+
+                    # 检查是否存在vindex.toml
+                    vindex_file = repo_dir / "vindex.toml"
+                    if not vindex_file.exists():
+                        log.warning(f"{repo_prefix}{repo_dir.name} (不可用)")
+                    else:
+                        log.info(f"{repo_prefix}{repo_dir.name}")
 
     def set_parser(self, p: argparse._SubParsersAction) -> argparse.ArgumentParser:
         list_parser = p.add_parser(
