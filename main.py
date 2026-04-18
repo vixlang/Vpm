@@ -3,6 +3,7 @@ from cmds import *
 import argparse
 
 global_parser = argparse.ArgumentParser()
+subparsers = global_parser.add_subparsers(dest="subcommand", help="[可用命令]")
 
 
 class Vpm:
@@ -12,7 +13,7 @@ class Vpm:
 
     def register(self, cmds: list[type[Command]]):
         for cmd in cmds:
-            c = cmd(global_parser)
+            c = cmd(subparsers)
             self.commands[cmd.NAME] = c
 
     def run(self, cmd_name, args):

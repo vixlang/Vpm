@@ -13,3 +13,22 @@ vpm add gitee:fexcode.vnet@master   # .com 可以省略
 
 > o,我还给自己留了个语法糖（因为我比较喜欢gitee嘛），  
 > @fexcode.vpm  # 等价于 gitee:fexcode.vpm
+
+## .vix目录结构示例
+```bash
+.vix
+└── libs
+    ├── gitee.com
+    |    ├── fexcode
+    |    │   ├── vpm
+    |    │   └── vpm2
+    |    └── fexcode2
+    |        └── vpm3
+    └── github.com
+        ├── fexcode
+        │   └── vpm
+        ├── fexcode2
+        │   └── vpm2
+        └── fexcode3
+            └── vpm3
+```

@@ -3,7 +3,7 @@ import argparse
 from git import Repo, remote
 import re
 from pathlib import Path
-from ._utils import Config, log, VIndexTool
+from .utils import Config, log, VIndexTool, parse_pack_name
 import shutil
 
 
@@ -49,69 +49,49 @@ class AddCmd(Command):
     NAME = "add"
 
     def execute(self):
-        package_name = getattr(self.namespace, "package", "unknown")
-        version = getattr(self.namespace, "version", "latest")
-        # print(f"增加包 {package_name}, 版本: {version}")
+        packname = getattr(self.namespace, "package", "unknown")
+        packinfo = parse_pack_name(packname)
 
-        # 给自己留的小语法糖~
-        if package_name.startswith("@"):
-            package_name = "gitee.com:" + package_name[1:]
-
-        if ":" in package_name:
-            master, package_name = package_name.split(":")
-            if not "." in master:
-                master = master + ".com"
-        else:
-            master = "github.com"
-
-        if "@" in package_name:
-            package_name, branch = package_name.split("@")
-        else:
-            branch = None  # git的默认分支
-
-        package_name = package_name.replace(".", "/")
-
-        PACK_PATH = Config.VIX_LIBS_PATH / master / package_name
+        PACK_PATH = packinfo.pack_path
 
         if PACK_PATH.exists():
-            log.warning(f"包 {package_name} 已经存在!")
+            log.warning(f"包 {packinfo.full_name} 已经存在!")
             yn = input("是否覆盖? (y/n): ")
             if yn.lower() != "y":
                 log.warning("已取消操作")
                 return
             else:
                 shutil.rmtree(PACK_PATH)
-                log.success(f"删除包 {package_name} 成功")
+                log.success(f"删除包 {packinfo.full_name} 成功")
 
-        log.info(f"开始下载包 https://{master}/{package_name} ...")
+        log.info(f"开始下载包 {packinfo.git_url} ...")
 
         try:
             Repo.clone_from(
-                f"https://{master}/{package_name}",
+                f"{packinfo.git_url}",
                 PACK_PATH,
-                branch=branch,
+                branch=packinfo.branch_name,
                 progress=TqdmProgress(),
             )
         except Exception as e:
-            log.error(f"下载包 {package_name} 失败: {e}")
+            log.error(f"下载包 {packinfo.full_name} 失败: {e}")
             return
 
-        log.info(f"下载包 {package_name} 成功，正在检查包信息 ...")
+        log.info(f"下载包 {packinfo.full_name} 成功，正在检查包信息 ...")
 
-        index = VIndexTool(PACK_PATH)
-        content = index.content(package_name=package_name)
+        content = VIndexTool(PACK_PATH).content(
+            package_name=packinfo.full_name,
+        )
 
-        log.success(f"增加包 {package_name} 成功")
+        log.success(f"增加包 {packinfo.full_name} 成功")
         log.debug(content)
 
-    def set_parser(self, p: argparse.ArgumentParser) -> argparse.ArgumentParser:
-        subparsers = p.add_subparsers(dest="subcommand", help="[可用命令]")
-
-        add_parser = subparsers.add_parser(
+    def set_parser(self, p: argparse._SubParsersAction) -> argparse.ArgumentParser:
+        add_parser = p.add_parser(
             "add",
             help="添加包(需要git)",
             epilog=包格式说明,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         add_parser.add_argument("package", help="需要添加的包名")
-        return p
+        return add_parser
