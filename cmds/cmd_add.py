@@ -40,6 +40,10 @@ class TqdmProgress(remote.RemoteProgress):
         if hasattr(self, "pbar"):
             self.pbar.close()
 
+    def close(self):
+        if hasattr(self, "pbar"):
+            self.pbar.close()
+
 
 class AddCmd(Command):
     NAME = "add"
@@ -62,17 +66,20 @@ class AddCmd(Command):
 
         log.info(f"开始下载包 {packinfo.git_url} ...")
 
+        progress = TqdmProgress()
         try:
             Repo.clone_from(
                 f"{packinfo.git_url}",
                 PACK_PATH,
                 branch=packinfo.branch_name,
-                progress=TqdmProgress(),
+                progress=progress,
             )
         except Exception as e:
+            progress.close()
             log.error(f"下载包 {packinfo.full_name} 失败: {e}")
             return
 
+        progress.close()
         log.info(f"下载包 {packinfo.full_name} 成功，正在检查包信息 ...")
 
         content = VIndexTool(PACK_PATH).content(
