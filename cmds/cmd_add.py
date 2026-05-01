@@ -3,6 +3,7 @@ import argparse
 from git import Repo, remote
 from .utils import log, VIndexTool, parse_pack_name
 import shutil
+from tqdm import tqdm
 
 命令格式说明 = """
 |======================== vpm add 命令格式说明 ========================|
@@ -19,8 +20,6 @@ import shutil
 [-]     vpm add @fexcode.vnet               # @符号开头默认为 gitee.com
 |==================================================================|
 """
-
-from tqdm import tqdm
 
 
 class TqdmProgress(remote.RemoteProgress):

@@ -1,4 +1,4 @@
-from cmds import *
+from cmds import cmds, Command, log
 
 import argparse
 
