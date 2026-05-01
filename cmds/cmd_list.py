@@ -5,18 +5,6 @@ from .utils import Config, log, console
 from rich.table import Table
 from rich.tree import Tree
 
-命令格式说明 = """
-|======================== vpm list 命令格式说明 ========================|
-[#] 格式为: 
-[>]     vpm list [-t|--tree]
-[/] 
-[#] 说明：列出所有已安装的包
-[/]
-[#] 参数：
-[-]     -t, --tree    以树形结构显示包列表
-|==================================================================|
-"""
-
 
 class ListCmd(Command):
     NAME = "list"
@@ -34,12 +22,18 @@ class ListCmd(Command):
             self._print_list(libs_path)
 
     def _print_list(self, libs_path: Path):
-        table = Table(title="已安装的 Vix 包", show_lines=True)
-        table.add_column("序号", style="cyan", justify="center", width=6)
+        table = Table(
+            title="\n[bold]已安装的 Vix 包[/bold]",
+            show_lines=True,
+            header_style="bold cyan",
+        )
+        table.add_column("序号", style="dim", justify="center", width=4)
         table.add_column("包名", style="bold white")
-        table.add_column("状态", justify="center", width=10)
+        table.add_column("状态", justify="center", width=8)
 
-        idx = 0
+        total = 0
+        available = 0
+
         for master_dir in libs_path.iterdir():
             if not master_dir.is_dir():
                 continue
@@ -51,16 +45,24 @@ class ListCmd(Command):
                         continue
                     vindex_file = repo_dir / "vindex.toml"
                     package_name = f"{master_dir.name}:{user_dir.name}.{repo_dir.name}"
-                    idx += 1
-                    if not vindex_file.exists():
-                        table.add_row(str(idx), package_name, "[red]不可用[/red]")
+                    total += 1
+                    if vindex_file.exists():
+                        available += 1
+                        table.add_row(
+                            str(total), package_name, "[green]可用[/green]"
+                        )
                     else:
-                        table.add_row(str(idx), package_name, "[green]可用[/green]")
+                        table.add_row(
+                            str(total), f"[dim]{package_name}[/dim]", "[red]不可用[/red]"
+                        )
 
+        footer = f"[dim]共 {total} 个包, {available} 个可用, {total - available} 个不可用[/dim]"
         console.print(table)
+        console.print(footer)
 
     def _print_tree(self, libs_path: Path):
-        tree = Tree(f"[bold blue]{libs_path}[/bold blue]", guide_style="dim")
+        console.print("\n[bold]Vix 包目录结构[/bold]")
+        tree = Tree(f"[bold blue]{libs_path}[/bold blue]", guide_style="dim cyan")
 
         master_dirs = sorted(d for d in libs_path.iterdir() if d.is_dir())
         for master_dir in master_dirs:
@@ -68,13 +70,17 @@ class ListCmd(Command):
 
             user_dirs = sorted(user for user in master_dir.iterdir() if user.is_dir())
             for user_dir in user_dirs:
-                user_branch = master_branch.add(f"[bold green]{user_dir.name}[/bold green]")
+                user_branch = master_branch.add(
+                    f"[bold green]{user_dir.name}[/bold green]"
+                )
 
                 repo_dirs = sorted(repo for repo in user_dir.iterdir() if repo.is_dir())
                 for repo_dir in repo_dirs:
                     vindex_file = repo_dir / "vindex.toml"
                     if not vindex_file.exists():
-                        user_branch.add(f"[dim]{repo_dir.name}[/dim] [red](不可用)[/red]")
+                        user_branch.add(
+                            f"[dim]{repo_dir.name}[/dim] [red](不可用)[/red]"
+                        )
                     else:
                         user_branch.add(f"{repo_dir.name}")
 
@@ -91,3 +97,16 @@ class ListCmd(Command):
             "-t", "--tree", action="store_true", help="以树形结构显示包列表"
         )
         return list_parser
+
+
+命令格式说明 = """
+|======================== vpm list 命令格式说明 ========================|
+[#] 格式为: 
+[>]     vpm list [-t|--tree]
+[/] 
+[#] 说明：列出所有已安装的包
+[/]
+[#] 参数：
+[-]     -t, --tree    以树形结构显示包列表
+|==================================================================|
+"""

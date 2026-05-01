@@ -1,6 +1,6 @@
 from .base import Command as Command
 from . import cmd_add, cmd_del, cmd_list, cmd_prune
-from .utils import log as log
+from .utils import log as log, console as console
 
 cmds: list[type[Command]] = [
     cmd_add.AddCmd,

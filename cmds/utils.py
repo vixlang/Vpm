@@ -1,5 +1,8 @@
 import sys
 from rich.console import Console
+from rich.panel import Panel
+from rich.rule import Rule
+from rich.prompt import Confirm
 from pathlib import Path
 import os
 import shutil
@@ -11,26 +14,35 @@ err_console = Console(file=sys.stderr)
 
 class Logger:
     def info(self, msg):
-        console.print(f"[cyan][INFO][/cyan]\t\t{msg}")
+        console.print(f"  [cyan]ℹ[/cyan]  {msg}")
 
     def success(self, msg):
-        console.print(f"[green][SUCCESS][/green]\t{msg}")
+        console.print(f"  [green]✔[/green]  {msg}")
 
     def warning(self, msg):
-        console.print(f"[yellow][WARNING][/yellow]\t{msg}")
+        console.print(f"  [yellow]⚠[/yellow]  {msg}")
 
     def error(self, msg):
-        err_console.print(f"[red][ERROR][/red]\t\t{msg}")
+        err_console.print(f"  [red]✘[/red]  {msg}")
 
     def debug(self, msg):
-        console.print(f"[magenta][DEBUG][/magenta]\t{msg}")
+        console.print(f"  [magenta]⚙[/magenta]  {msg}")
 
     def critical(self, msg):
-        """不可恢复的错误，直接退出"""
         err_console.print(
-            f"[bold red]====== [CRITICAL] {msg} ======[/bold red]",
+            Panel(f"[bold red]{msg}[/bold red]", title="CRITICAL", border_style="red")
         )
         exit(1)
+
+    def section(self, title: str):
+        console.print(Rule(f"[bold]{title}[/bold]", style="dim"))
+
+    def status_panel(self, msg, title="INFO", border_style="blue"):
+        console.print(Panel(msg, title=title, border_style=border_style))
+
+
+def ask_confirm(prompt: str, default: bool = False) -> bool:
+    return Confirm.ask(prompt, default=default)
 
 
 class Config:
@@ -47,8 +59,7 @@ class VIndexTool:
 
         if not (self.path).exists():
             log.error(f"包 {package_name} 不存在 vindex.toml 文件!")
-            yn = input("是否删除? (y/n)")
-            if yn == "y":
+            if ask_confirm("是否删除?"):
                 shutil.rmtree(self.path.parent)
                 log.warning(f"已删除包 {package_name}")
                 exit(0)
@@ -63,18 +74,17 @@ class VIndexTool:
 
 @dataclass
 class PackageNameInfo:
-    repo_name: str  # 仓库名
+    repo_name: str
 
-    git_master: str = "github.com"  # git主仓库名，如：github.com
-    user_name: str = "vixlang"  # 用户名
+    git_master: str = "github.com"
+    user_name: str = "vixlang"
 
-    branch_name: str | None = None  # 分支名
+    branch_name: str | None = None
 
     @property
     def pack_path(self, parent: Path = Config.VIX_LIBS_PATH) -> Path:
         return parent / self.git_master / self.user_name / self.repo_name
 
-    # 计算属性
     @property
     def git_url(self):
         return f"https://{self.git_master}/{self.user_name}/{self.repo_name}"
@@ -87,27 +97,22 @@ class PackageNameInfo:
 def parse_pack_name(package_name: str) -> PackageNameInfo:
 
     if "." not in package_name:
-        # vnet
         package_name = f"github.com:vixlang.vlib-{package_name}"
 
-    # 给自己留的小语法糖~
     if package_name.startswith("@"):
         package_name = "gitee.com:" + package_name[1:]
 
     if ":" in package_name:
-        # github.com:fexcode.vnet
         master, package_name = package_name.split(":")
         if "." not in master:
-            # github:fexcode.vnet
             master = master + ".com"
     else:
         master = "github.com"
 
     if "@" in package_name:
-        # fexcode.vnet@master
         package_name, branch = package_name.split("@")
     else:
-        branch = None  # git的默认分支
+        branch = None
 
     package_name = package_name.replace(".", "/")
 
@@ -124,6 +129,7 @@ def parse_pack_name(package_name: str) -> PackageNameInfo:
 
 
 log = Logger()
+
 
 if __name__ == "__main__":
     print(parse_pack_name("fexcode.vnet@master"))

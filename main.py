@@ -1,4 +1,5 @@
-from cmds import cmds, Command, log
+from cmds import cmds, Command, log, console
+from rich.panel import Panel
 
 import argparse
 
@@ -23,7 +24,6 @@ class Vpm:
             exit(1)
 
         cmd = self.commands[cmd_name]
-        # 设置命名空间
         cmd.namespace = args
         cmd.execute()
 
@@ -32,12 +32,28 @@ vpm = Vpm(global_parser)
 vpm.register(cmds)
 
 
+def print_banner():
+    console.print(
+        Panel(
+            "[bold cyan]Vix 包管理器[/bold cyan]\n\n"
+            "[dim]用法: vpm <命令> [参数][/dim]\n\n"
+            "[bold]可用命令:[/bold]\n"
+            "  [green]add[/green]    添加包\n"
+            "  [red]del[/red]     删除包\n"
+            "  [cyan]list[/cyan]   列出已安装的包\n"
+            "  [yellow]prune[/yellow]  清理无效包和空目录",
+            title="[bold]VPM[/bold]",
+            border_style="blue",
+            padding=(1, 2),
+        )
+    )
+
+
 if __name__ == "__main__":
     args = global_parser.parse_args()
 
-    # 如果没有指定命令，显示帮助信息
     if not hasattr(args, "subcommand") or not args.subcommand:
-        global_parser.print_help()
+        print_banner()
         exit(1)
 
     vpm.run(args.subcommand, args)
