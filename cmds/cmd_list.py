@@ -1,7 +1,9 @@
 from .base import Command
 import argparse
 from pathlib import Path
-from .utils import Config, log
+from .utils import Config, log, console
+from rich.table import Table
+from rich.tree import Tree
 
 命令格式说明 = """
 |======================== vpm list 命令格式说明 ========================|
@@ -32,65 +34,51 @@ class ListCmd(Command):
             self._print_list(libs_path)
 
     def _print_list(self, libs_path: Path):
-        # 遍历所有git主仓库目录
+        table = Table(title="已安装的 Vix 包", show_lines=True)
+        table.add_column("序号", style="cyan", justify="center", width=6)
+        table.add_column("包名", style="bold white")
+        table.add_column("状态", justify="center", width=10)
+
+        idx = 0
         for master_dir in libs_path.iterdir():
             if not master_dir.is_dir():
                 continue
-
-            # 遍历用户目录
             for user_dir in master_dir.iterdir():
                 if not user_dir.is_dir():
                     continue
-
-                # 遍历仓库目录
                 for repo_dir in user_dir.iterdir():
                     if not repo_dir.is_dir():
                         continue
-
-                    # 检查是否存在vindex.toml
                     vindex_file = repo_dir / "vindex.toml"
                     package_name = f"{master_dir.name}:{user_dir.name}.{repo_dir.name}"
-
+                    idx += 1
                     if not vindex_file.exists():
-                        log.warning(f"  {package_name} (不可用)")
+                        table.add_row(str(idx), package_name, "[red]不可用[/red]")
                     else:
-                        log.info(f"  {package_name}")
+                        table.add_row(str(idx), package_name, "[green]可用[/green]")
+
+        console.print(table)
 
     def _print_tree(self, libs_path: Path):
-        log.info(f"{libs_path}")
+        tree = Tree(f"[bold blue]{libs_path}[/bold blue]", guide_style="dim")
+
         master_dirs = sorted(d for d in libs_path.iterdir() if d.is_dir())
-        for i, master_dir in enumerate(master_dirs):
-            is_last_master = i == len(master_dirs) - 1
-            master_prefix = "└── " if is_last_master else "├── "
-            log.info(f"{master_prefix}{master_dir.name}")
+        for master_dir in master_dirs:
+            master_branch = tree.add(f"[bold cyan]{master_dir.name}[/bold cyan]")
 
             user_dirs = sorted(user for user in master_dir.iterdir() if user.is_dir())
-            for j, user_dir in enumerate(user_dirs):
-                is_last_user = j == len(user_dirs) - 1
-                if is_last_master:
-                    user_prefix = "    └── " if is_last_user else "    ├── "
-                else:
-                    user_prefix = "│   └── " if is_last_user else "│   ├── "
-                log.info(f"{user_prefix}{user_dir.name}")
+            for user_dir in user_dirs:
+                user_branch = master_branch.add(f"[bold green]{user_dir.name}[/bold green]")
 
                 repo_dirs = sorted(repo for repo in user_dir.iterdir() if repo.is_dir())
-                for k, repo_dir in enumerate(repo_dirs):
-                    is_last_repo = k == len(repo_dirs) - 1
-                    if is_last_master and is_last_user:
-                        repo_prefix = "        └── " if is_last_repo else "        ├── "
-                    elif is_last_master:
-                        repo_prefix = "    │   └── " if is_last_repo else "    │   ├── "
-                    elif is_last_user:
-                        repo_prefix = "│       └── " if is_last_repo else "│       ├── "
-                    else:
-                        repo_prefix = "│   │   └── " if is_last_repo else "│   │   ├── "
-
-                    # 检查是否存在vindex.toml
+                for repo_dir in repo_dirs:
                     vindex_file = repo_dir / "vindex.toml"
                     if not vindex_file.exists():
-                        log.warning(f"{repo_prefix}{repo_dir.name} (不可用)")
+                        user_branch.add(f"[dim]{repo_dir.name}[/dim] [red](不可用)[/red]")
                     else:
-                        log.info(f"{repo_prefix}{repo_dir.name}")
+                        user_branch.add(f"{repo_dir.name}")
+
+        console.print(tree)
 
     def set_parser(self, p: argparse._SubParsersAction) -> argparse.ArgumentParser:
         list_parser = p.add_parser(

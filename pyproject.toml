@@ -1,12 +1,12 @@
 [project]
 name = "vpm"
-version = "0.1.0"
+version = "0.2.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "colorama>=0.4.6",
     "gitpython>=3.1.46",
+    "rich>=15.0.0",
     "tqdm>=4.67.3",
 ]
 
@@ -17,4 +17,5 @@ default = true
 [dependency-groups]
 dev = [
     "black>=26.3.1",
+    "ruff>=0.15.12",
 ]
